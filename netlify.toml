@@ -1,6 +1,6 @@
 [build]
-  command = "pnpm run build"
+  command = "npm run build"
   publish = ".next"
 
-[build.environment]
-  SKIP_ENV_VALIDATION = "1"
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
