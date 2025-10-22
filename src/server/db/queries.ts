@@ -5,21 +5,26 @@ import { eq } from "drizzle-orm"
 
 export const QUERIES = {
 
-getAllParentsForFolder : async function (folderId : number){
-    const parents = [];
-    let currentId : number | null = folderId;
-    while(currentId !== null ){
-        const folder = await db
-        .selectDistinct()
-        .from(foldersSchema)
-        .where(eq(foldersSchema.id, currentId))
-        if (!folder[0]){
-            throw new Error("Folder not found")
-        }
-        parents.unshift(folder[0]);
-        currentId = folder[0]?.parent;
-    }
-    return parents;
+getAllParentsForFolder: async function (folderId: number) {
+  // Fetch all folders once, then traverse in memory
+  const allFolders = await db
+    .select()
+    .from(foldersSchema)
+    .execute();
+  
+  const folderMap = new Map(allFolders.map(f => [f.id, f]));
+  const parents = [];
+  let currentId: number | null = folderId;
+  
+  // Traverse in memory (fast) instead of making DB queries
+  while (currentId !== null) {
+    const folder = folderMap.get(currentId);
+    if (!folder) break;
+    parents.unshift(folder);
+    currentId = folder.parent;
+  }
+  
+  return parents;
 },
     // const parsedFolderId = parseInt(params.folderId);
 
