@@ -7,3 +7,14 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[[redirects]]
+      from = "/relay-pt9f/:path*" # Or any custom path you want to use for PostHog
+      to = "https://us.i.posthog.com/:path*"
+      status = 200
+      force = true
+[[redirects]]
+      from = "/relay-pt9f/static/:path*"
+      to = "https://us-assets.i.posthog.com/static/:path*"
+      status = 200
+      force= true
