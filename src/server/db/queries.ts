@@ -1,57 +1,73 @@
-import "server-only"
-import { files_table as filesSchema, folders_table as foldersSchema, type DB_FileType } from "~/server/db/schema"
-import { db } from "~/server/db"
-import { eq } from "drizzle-orm"
+import "server-only";
+
+import { db } from "~/server/db";
+import {
+  files_table as filesSchema,
+  folders_table as foldersSchema,
+  type DB_FileType,
+} from "~/server/db/schema";
+import { eq } from "drizzle-orm";
 
 export const QUERIES = {
-
-getAllParentsForFolder: async function (folderId: number) {
-  // Fetch all folders once, then traverse in memory
-  const allFolders = await db
-    .select()
-    .from(foldersSchema)
-    .execute();
-  
-  const folderMap = new Map(allFolders.map(f => [f.id, f]));
-  const parents = [];
-  let currentId: number | null = folderId;
-  
-  // Traverse in memory (fast) instead of making DB queries
-  while (currentId !== null) {
-    const folder = folderMap.get(currentId);
-    if (!folder) break;
-    parents.unshift(folder);
-    currentId = folder.parent;
-  }
-  
-  return parents;
-},
-    // const parsedFolderId = parseInt(params.folderId);
-
-    getFiles : function (folderId:number)
-    {return db
-    .select()
-    .from(filesSchema)
-    .where(eq(filesSchema.parent, folderId));
-},
-    
-    getFolders : function (folderId:number) { 
+  getFolders: function (folderId: number) {
     return db
-    .select()
-    .from(foldersSchema)
-    .where(eq(foldersSchema.parent, folderId))}
-}
+      .select()
+      .from(foldersSchema)
+      .where(eq(foldersSchema.parent, folderId));
+  },
+  getFiles: function (folderId: number) {
+    return db
+      .select()
+      .from(filesSchema)
+      .where(eq(filesSchema.parent, folderId));
+  },
+  getAllParentsForFolder: async function (folderId: number) {
+    const parents = [];
+    let currentId: number | null = folderId;
+
+    while (currentId !== null) {
+      const folder = await db
+        .selectDistinct()
+        .from(foldersSchema)
+        .where(eq(foldersSchema.id, currentId));
+
+      if (!folder[0]) {
+        // If this is the first iteration and folder not found, it's an invalid folder
+        if (parents.length === 0) {
+          throw new Error("Folder not found");
+        }
+        // Otherwise, we've reached a parent that doesn't exist - break
+        break;
+      }
+
+      parents.unshift(folder[0]);
+      currentId = folder[0]?.parent; // This will be null for root folders
+    }
+
+    return parents;
+  },
+  getFolderById: async function (folderId: number) {
+    const folder = await db
+      .select()
+      .from(foldersSchema)
+      .where(eq(foldersSchema.id, folderId));
+    return folder[0];
+  },
+};
 
 export const MUTATIONS = {
-  createFile: async function (input:{file:{
-    name:string;
-    size:number;
-    url:string;
-    parent:number;
-  };
-userId:string;}) {
-    return await db.insert(filesSchema).values({...input.file,
-      parent:input.file.parent,}
-    )
-  }
-}
+  createFile: async function (input: {
+    file: {
+      name: string;
+      size: number;
+      url: string;
+      parent: number;
+    };
+    userId: string;
+  }) {
+    return await db.insert(filesSchema).values({
+      ...input.file,
+      ownerId: input.userId,
+    });
+  },
+};

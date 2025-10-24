@@ -1,9 +1,11 @@
+
 "use client";
-import { ChevronRight } from "lucide-react";
+
+import { Upload, ChevronRight } from "lucide-react";
 import { FileRow, FolderRow } from "./file-row";
 import type { files_table, folders_table } from "~/server/db/schema";
 import Link from "next/link";
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { UploadButton } from "~/components/uploadthing";
 import { useRouter } from "next/navigation";
 
@@ -11,24 +13,24 @@ export default function DriveContents(props: {
   files: (typeof files_table.$inferSelect)[];
   folders: (typeof folders_table.$inferSelect)[];
   parents: (typeof folders_table.$inferSelect)[];
-}) {
 
-  const navigate = useRouter()
+  currentFolderId: number;
+}) {
+  const navigate = useRouter();
 
   return (
     <div className="min-h-screen bg-gray-900 p-8 text-gray-100">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center">
-            <Link href={"/f/1"}
-              className="mr-2 text-gray-300 hover:text-white"
-            >
+            <Link href="/f/1" className="mr-2 text-gray-300 hover:text-white">
               My Drive
             </Link>
-            {props.parents?.map((folder, index) => (
+            {props.parents.map((folder, index) => (
               <div key={folder.id} className="flex items-center">
                 <ChevronRight className="mx-2 text-gray-500" size={16} />
-                <Link href={`/f/${folder.id}`}
+                <Link
+                  href={`/f/${folder.id}`}
                   className="text-gray-300 hover:text-white"
                 >
                   {folder.name}
@@ -39,11 +41,6 @@ export default function DriveContents(props: {
           <div>
             <SignedOut>
               <SignInButton />
-              {/* <SignUpButton>
-                <button className="bg-[#6c47ff] text-ceramic-white rounded-full font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 cursor-pointer">
-                  Sign Up */}
-                {/* </button> */}
-              {/* </SignUpButton> */}
             </SignedOut>
             <SignedIn>
               <UserButton />
@@ -60,19 +57,22 @@ export default function DriveContents(props: {
           </div>
           <ul>
             {props.folders.map((folder) => (
-              <FolderRow
-                key={folder.id}
-                folder={folder}
-                handleFolderClick={() => {
-                }}
-              />
+              <FolderRow key={folder.id} folder={folder} />
             ))}
             {props.files.map((file) => (
               <FileRow key={file.id} file={file} />
             ))}
           </ul>
         </div>
-        <UploadButton endpoint="imageUploader" onClientUploadComplete={() => {navigate.refresh()}} />
+        <UploadButton
+          endpoint="driveUploader"
+          onClientUploadComplete={() => {
+            navigate.refresh();
+          }}
+          input={{
+            folderId: props.currentFolderId,
+          }}
+        />
       </div>
     </div>
   );

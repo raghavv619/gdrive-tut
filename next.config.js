@@ -2,17 +2,30 @@
  * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially useful
  * for Docker builds.
  */
-import { tr } from "zod/v4/locales";
 import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
     eslint: {
-        ignoreDuringBuilds:true,
+        ignoreDuringBuilds: true,
     },
     typescript: {
         ignoreBuildErrors: true,
     },
+    async rewrites() {
+        return [
+            {
+                source: "/relay-pt9f/static/:path*",
+                destination: "https://us-assets.i.posthog.com/static/:path*",
+            },
+            {
+                source: "/relay-pt9f/:path*",
+                destination: "https://us.i.posthog.com/:path*",
+            },
+        ];
+    },
+    // This is required to support PostHog trailing slash API requests
+    skipTrailingSlashRedirect: true,
 };
 
 export default config;
